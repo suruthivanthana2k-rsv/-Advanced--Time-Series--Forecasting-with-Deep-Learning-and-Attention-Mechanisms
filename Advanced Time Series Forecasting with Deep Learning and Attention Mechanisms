@@ -1,0 +1,16 @@
+advanced_ts_forecasting/
+├─ README.md
+├─ requirements.txt
+├─ data/
+│  └─ generate_data.py
+├─ src/
+│  ├─ _init_.py
+│  ├─ utils.py
+│  ├─ data_module.py
+│  ├─ models.py
+│  ├─ train_optuna.py
+│  ├─ backtest.py
+│  └─ evaluate.py
+├─ notebooks/
+│  └─ quick_run.ipynb
+└─ run_experiments.sh
