@@ -1,0 +1,54 @@
+## data/generate_data.py
+(Synthetic multivariate dataset; produces CSV)
+```python
+#!/usr/bin/env python3
+"""
+Generate a synthetic multivariate time series with seasonality, trend, noise, and regime shifts.
+Produces CSV with columns: timestamp, feat0..feat4
+"""
+import numpy as np
+import pandas as pd
+import argparse
+
+def generate_series(n=5000, seed=42):
+    rng = np.random.RandomState(seed)
+    t = np.arange(n)
+    # Global trend
+    trend = 0.0005 * t
+    # Seasonality with multiple frequencies
+    seasonal1 = 2.0 * np.sin(2 * np.pi * t / 24)  # daily-ish
+    seasonal2 = 0.5 * np.sin(2 * np.pi * t / (24*7))  # weekly-ish
+    # Regime shifts
+    regimes = (np.tanh((t - n/3)/50) + np.tanh((t - 2*n/3)/60))  # smooth shifts
+    base = trend + seasonal1 + seasonal2 + regimes
+
+    features = []
+    for i in range(5):
+        scale = 1.0 + 0.3 * i
+        phase = rng.uniform(0, 2*np.pi)
+        noise = rng.normal(scale=0.3*scale, size=n)
+        ar = 0.6 - 0.1*i
+        # AR(1) component
+        ar_comp = np.zeros(n)
+        for j in range(1,n):
+            ar_comp[j] = ar * ar_comp[j-1] + rng.normal(scale=0.05)
+        feat = scale * base + 0.2 * np.sin(2*np.pi*(t + phase)/(24*(i+1))) + ar_comp + noise
+        features.append(feat)
+    df = pd.DataFrame(np.stack(features, axis=1), columns=[f"feat{i}" for i in range(5)])
+    df['timestamp'] = pd.date_range(start="2000-01-01", periods=n, freq='H')
+    cols = ['timestamp'] + [f"feat{i}" for i in range(5)]
+    return df[cols]
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out', default='data/synthetic.csv')
+    parser.add_argument('--n', type=int, default=5000)
+    parser.add_argument('--seed', type=int, default=42)
+    args = parser.parse_args()
+
+    df = generate_series(n=args.n, seed=args.seed)
+    df.to_csv(args.out, index=False)
+    print(f"Wrote {args.out} with {len(df)} rows.")
+
+if _name_ == "_main_":
+    main()
